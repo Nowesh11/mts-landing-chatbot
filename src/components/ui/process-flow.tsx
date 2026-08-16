@@ -142,6 +142,7 @@ export function ProcessFlow({
 
     let ctx: gsap.Context | undefined;
     let raf = 0;
+    let cancelled = false;
 
     const isDesktop = () => window.matchMedia("(min-width: 1024px)").matches;
 
@@ -276,7 +277,25 @@ export function ProcessFlow({
       }, container);
     };
 
-    build();
+    // When `pin` is used with `pinTargetRef`, that ref points at a DOM node
+    // owned by an ANCESTOR component (e.g. the section wrapping this one).
+    // React attaches refs and fires layout effects together, bottom-up, one
+    // fiber at a time — so on first mount this component's own
+    // useLayoutEffect always runs before the ancestor's ref gets attached,
+    // meaning `pinTargetRef.current` is reliably still null the first time
+    // build() would run here (confirmed via logging: it was null on every
+    // mount, for every `pin` usage). Deferring the initial build with a
+    // microtask lets the full commit — including the ancestor's ref —
+    // finish first, so the pin correctly targets the intended
+    // section-level element instead of silently falling back to this
+    // component's own inner container. A microtask is used rather than
+    // requestAnimationFrame so this isn't tied to a paint (and doesn't
+    // stall on a backgrounded/inactive tab, where rAF can be throttled
+    // indefinitely) — it still runs strictly after the synchronous commit,
+    // which is all the guarantee this needs.
+    queueMicrotask(() => {
+      if (!cancelled) build();
+    });
 
     const onResize = () => {
       cancelAnimationFrame(raf);
@@ -288,6 +307,7 @@ export function ProcessFlow({
     window.addEventListener("resize", onResize);
 
     return () => {
+      cancelled = true;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       resizeObserver.disconnect();
