@@ -41,6 +41,16 @@ export function JourneySection() {
 
     let ctx: gsap.Context | undefined;
 
+    // NOTE: this effect only handles the background image's parallax
+    // drift. The actual pin (position:fixed, visibility gating, and the
+    // clearance check against Project Experience) is owned entirely by
+    // the <ProcessFlow> component below via its gateAgainstSectionId
+    // prop — that component creates its own separate ScrollTrigger
+    // targeting this same pinRef element. This effect must NOT also set
+    // autoAlpha/zIndex on pinRef; two independent systems fighting over
+    // the same element's visibility was the actual cause of the
+    // Project-Experience/Journey clash, even after this effect's own
+    // gate was "fixed" — ProcessFlow's ungated pin kept overriding it.
     const build = () => {
       // Scale must be set through GSAP too, not left as a plain CSS style —
       // GSAP owns the whole `transform` property once it animates any
@@ -85,7 +95,7 @@ export function JourneySection() {
     >
       <div
         ref={pinRef}
-        className="relative flex min-h-screen flex-col justify-center gap-14 overflow-hidden px-6 py-16 lg:gap-16 lg:px-10"
+        className="relative flex min-h-screen flex-col justify-center gap-14 overflow-hidden bg-navy px-6 py-16 lg:gap-16 lg:px-10"
       >
         {/* Background image lives INSIDE the pinned element — anything
             outside it would scroll away almost immediately once the pin
@@ -131,11 +141,12 @@ export function JourneySection() {
           <ProcessFlow
             stages={MILESTONES}
             descriptions={DESCRIPTIONS}
-            renderExtra={(i) => (i === 3 ? <CredentialBadges labels={CERTS} /> : null)}
+            renderExtraAction={(i) => (i === 3 ? <CredentialBadges labels={CERTS} /> : null)}
             size="lg"
             pin
             pinTargetRef={pinRef}
             gradientId="journey-flow-gradient"
+            gateAgainstSectionId="project-experience"
           />
         </div>
       </div>

@@ -41,18 +41,97 @@ export function ClarityRevealSection() {
 
     const proxy = { progress: 0 };
 
+    // Previously, gating only hid the visual OUTPUT (autoAlpha) while GSAP
+    // kept calculating scrub progress underneath — so by the time the gate
+    // allowed visibility, the scrub had already silently advanced to
+    // wherever the user had scrolled to, and it "snapped" to that value
+    // instead of animating smoothly from the start. The real fix is to
+    // stop the ScrollTrigger INSTANCE itself from doing anything — no pin,
+    // no scrub calculation, no callbacks — until the previous section has
+    // genuinely cleared. It starts disabled and is only enabled once, the
+    // moment that's confirmed true.
+    const previousSection = document.getElementById("solutions");
+    const isPreviousSectionCleared = () => {
+      if (!previousSection) return true;
+      // Must have scrolled almost entirely past — bottom edge at or above
+      // a small tolerance near the TOP of the viewport, not the bottom.
+      // (Previous version compared against window.innerHeight + 40, which
+      // is satisfied while the previous section is still ~90% on screen —
+      // that was the actual cause of the premature-activation bug.)
+      return previousSection.getBoundingClientRect().bottom <= 40;
+    };
+
+    let hasEnabled = !previousSection;
+    let rafId = 0;
+    const pollUntilCleared = (
+      st: ScrollTrigger,
+      onEnabled: () => void
+    ) => {
+      const check = () => {
+        if (hasEnabled) return;
+        if (isPreviousSectionCleared()) {
+          hasEnabled = true;
+          st.enable();
+          onEnabled();
+          return;
+        }
+        // requestAnimationFrame rather than a scroll listener so this
+        // can't miss a fast flick scroll that jumps straight past the
+        // clearance point between two scroll events.
+        rafId = requestAnimationFrame(check);
+      };
+      check();
+    };
+
     const ctx = gsap.context(() => {
-      gsap.to(proxy, {
+      // Invisible until this section's own pin genuinely activates — a hard
+      // gate so it can never be simultaneously visible with the section
+      // before/after it, regardless of any pin-timing imprecision.
+      gsap.set(pin, { autoAlpha: 0, zIndex: 0 });
+
+      const tween = gsap.to(proxy, {
         progress: 100,
         ease: "none",
         scrollTrigger: {
           trigger: pin,
           start: "top top",
-          end: () => `+=${Math.max(window.innerHeight * 1.2, 800)}`,
+          // Widened from 1.2x to 1.8x viewport height — console evidence
+          // showed the underlying scrub state was always correct/synced,
+          // but the previous distance (973px in the tested case) could be
+          // covered fast enough during normal scrolling to feel like
+          // snapping rather than a gradual reveal.
+          end: () => `+=${Math.max(window.innerHeight * 1.8, 1200)}`,
           scrub: 1,
           pin: true,
-          anticipatePin: 1,
           invalidateOnRefresh: true,
+          onEnter: () =>
+            gsap.to(pin, {
+              autoAlpha: 1,
+              zIndex: 20,
+              duration: 0.35,
+              ease: "power2.out",
+            }),
+          onEnterBack: () =>
+            gsap.to(pin, {
+              autoAlpha: 1,
+              zIndex: 20,
+              duration: 0.35,
+              ease: "power2.out",
+            }),
+          // Once the pin has fully released (either direction), reset the
+          // reveal to its rest state — otherwise the sharp layer/divider
+          // line are left frozen mid-reveal at whatever progress they had
+          // on the last scroll tick, and that stale state can visually
+          // intrude into whatever section follows once this one is back
+          // in normal (unpinned) document flow.
+          onLeave: () => {
+            sharp.style.clipPath = "inset(0 100% 0 0)";
+            line.style.left = "0%";
+          },
+          onLeaveBack: () => {
+            sharp.style.clipPath = "inset(0 100% 0 0)";
+            line.style.left = "0%";
+          },
         },
         onUpdate: () => {
           const p = proxy.progress;
@@ -62,9 +141,47 @@ export function ClarityRevealSection() {
           line.style.left = `${p}%`;
         },
       });
+
+      const st = tween.scrollTrigger!;
+      if (!hasEnabled) {
+        // Disable synchronously, before the browser has any chance to
+        // paint or scroll further — GSAP will not pin, scrub, or fire any
+        // callback on this instance at all while disabled, so proxy.progress
+        // stays frozen at 0 no matter how far the user scrolls in the
+        // meantime.
+        st.disable();
+        pollUntilCleared(st, () => {
+          // st.enable() resumes the trigger using whatever start/end it
+          // calculated at creation time (while still effectively
+          // disabled) — refresh re-measures against the current layout.
+          st.refresh();
+          // Same fix applied to ProcessFlow/Journey: resize Lenis right
+          // when this pin's true final height becomes known, since
+          // SmoothScrollProvider's time-based refreshes may fire before
+          // this gate ever opens.
+          // Deferred by one frame — calling synchronously could read the
+          // DOM before the browser applies the pin's new layout,
+          // computing a temporarily wrong page height and forcibly
+          // resetting scroll to top (the actual cause of that regression).
+          requestAnimationFrame(() => window.__lenis?.resize());
+          // Neither enable() nor refresh() is guaranteed to retroactively
+          // fire the tween's onUpdate callback for the "jump" to the
+          // current scroll-derived progress — confirmed via console:
+          // GSAP's own st.progress correctly read 1 (fully complete) but
+          // the visual clip-path/line never moved from their fully-
+          // hidden initial values, because onUpdate simply never ran.
+          // Re-assigning the tween's progress to itself forces GSAP to
+          // treat it as a genuine change and fire onUpdate, syncing the
+          // DOM styles with the already-correct internal progress value.
+          tween.progress(tween.progress());
+        });
+      }
     }, sectionRef);
 
-    return () => ctx.revert();
+    return () => {
+      cancelAnimationFrame(rafId);
+      ctx.revert();
+    };
   }, []);
 
   return (
@@ -75,7 +192,7 @@ export function ClarityRevealSection() {
     >
       <div
         ref={pinRef}
-        className="relative flex h-screen w-full items-center justify-center overflow-hidden"
+        className="relative flex h-screen w-full items-center justify-center overflow-hidden bg-navy"
       >
         {/* Blurred base layer — always fully visible underneath */}
         <div className="absolute inset-0" aria-hidden>
@@ -83,7 +200,7 @@ export function ClarityRevealSection() {
             src={IMAGE_SRC}
             alt=""
             fill
-            priority
+            loading="lazy"
             sizes="100vw"
             className="object-cover"
             style={{ filter: "blur(11px)", transform: "scale(1.06)" }}
@@ -102,7 +219,7 @@ export function ClarityRevealSection() {
             src={IMAGE_SRC}
             alt=""
             fill
-            priority
+            loading="lazy"
             sizes="100vw"
             className="object-cover"
           />

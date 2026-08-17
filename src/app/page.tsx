@@ -20,15 +20,15 @@ export default function Home() {
       <Navbar />
       <Hero />
       <AboutSection />
+      <EsgSection />
+      <ProcessFlowSection />
       <SolutionsSection />
-      <SectorSolutionsSection />
       <ClarityRevealSection />
       <ResourcePanelsSection />
+      <SectorSolutionsSection />
       <WhyMtSmartSection />
       <ProjectExperienceSection />
       <JourneySection />
-      <EsgSection />
-      <ProcessFlowSection />
       <FinalCtaSection />
       <ContactSection />
       <Footer />

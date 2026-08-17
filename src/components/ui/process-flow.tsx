@@ -56,17 +56,18 @@ const SIZE_CONFIG: Record<
  * content panels (size="sm", not pinned — the row's own scroll position
  * through the viewport drives the same scrub mechanic instead), and
  * year-based milestone timelines (size="lg", pin, with `descriptions` and
- * optionally `renderExtra` for a per-milestone detail like credential
+ * optionally `renderExtraAction` for a per-milestone detail like credential
  * badges — see Our Journey).
  */
 export function ProcessFlow({
   stages,
   descriptions,
-  renderExtra,
+  renderExtraAction,
   size = "sm",
   pin = false,
   pinTargetRef,
   gradientId,
+  gateAgainstSectionId,
 }: {
   stages: string[];
   /** Paragraph copy per stage. When provided, switches labels to a smaller
@@ -75,12 +76,28 @@ export function ProcessFlow({
    * so the line clears the body copy instead of cutting through it. */
   descriptions?: string[];
   /** Optional extra content rendered beneath a stage's description (e.g.
-   * credential badges), fading/scaling in with that stage's activation. */
-  renderExtra?: (index: number) => React.ReactNode;
+   * credential badges), fading/scaling in with that stage's activation.
+   * Named with the "Action" suffix (rather than the more natural
+   * "renderExtra") purely to satisfy Next.js's TypeScript plugin, which
+   * flags function props with a Server-Action-style naming heuristic even
+   * when both this component and every caller are already "use client" —
+   * this isn't an actual Server Action, just working around that check. */
+  renderExtraAction?: (index: number) => React.ReactNode;
   size?: Size;
   pin?: boolean;
   pinTargetRef?: RefObject<HTMLElement | null>;
   gradientId: string;
+  /** Only meaningful when `pin` is true. If provided, the pin will not
+   * activate — no position:fixed, no visibility, no scrub calculation —
+   * until the element with this id has scrolled almost entirely out of
+   * view. This is the fix for a pinned instance clashing with whatever
+   * section immediately precedes it (e.g. Our Journey clashing with
+   * Project Experience, which sits directly above it) — the previous
+   * section's own component has no way to coordinate with this one on its
+   * own, so this component needs to know explicitly what to wait for.
+   * Omit for usages where no such clash has been observed (e.g. the
+   * Big Statement / ProcessFlowSection usage after ESG). */
+  gateAgainstSectionId?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -143,6 +160,7 @@ export function ProcessFlow({
     let ctx: gsap.Context | undefined;
     let raf = 0;
     let cancelled = false;
+    let gateRafId = 0;
 
     const isDesktop = () => window.matchMedia("(min-width: 1024px)").matches;
 
@@ -209,6 +227,69 @@ export function ProcessFlow({
       ctx = gsap.context(() => {
         const trigger = pin ? pinTargetRef?.current ?? container : container;
 
+        // Invisible until this section's own pin genuinely activates — a
+        // hard gate so it can never be simultaneously visible with the
+        // section before/after it, regardless of any pin-timing
+        // imprecision. Only applies to the pinned (size="lg") usages —
+        // inline (size="sm") instances aren't pinned and stay visible.
+        if (pin) {
+          gsap.set(trigger, { autoAlpha: 0, zIndex: 0 });
+        }
+
+        // If a section id was given to gate against, this pin must not
+        // activate — not just stay visually hidden, but not even start
+        // its ScrollTrigger's pin/scrub calculations — until that section
+        // has scrolled almost entirely out of view. Gating only the
+        // visual output while GSAP kept calculating scrub progress
+        // underneath was tried previously and produced a "snap" once
+        // visibility was finally allowed (the scrub had silently advanced
+        // to wherever the user had scrolled to in the meantime) — so the
+        // ScrollTrigger instance itself starts disabled and is only
+        // enabled once, the moment clearance is confirmed.
+        const previousSection = gateAgainstSectionId
+          ? document.getElementById(gateAgainstSectionId)
+          : null;
+        const isPreviousSectionCleared = () => {
+          if (!previousSection) return true;
+          return previousSection.getBoundingClientRect().bottom <= 40;
+        };
+        let hasEnabledGate = !previousSection;
+        const pollUntilCleared = (st: ScrollTrigger, onEnabled: () => void) => {
+          const check = () => {
+            if (hasEnabledGate) return;
+            if (isPreviousSectionCleared()) {
+              hasEnabledGate = true;
+              st.enable();
+              st.refresh();
+              // The moment this gate opens is exactly when this pin's
+              // reserved space (pin-spacer height) becomes its true,
+              // final value — before this, it may not have been
+              // reserving its full eventual height at all. Lenis keeps
+              // its own separate understanding of total page height
+              // (lenis.limit) that only gets synced by SmoothScrollProvider's
+              // time-based refreshes — which can fire BEFORE this gate
+              // ever opens (if the user hasn't scrolled this far yet),
+              // meaning they'd capture a page height from before this
+              // pin properly expanded. Resizing Lenis right here, exactly
+              // when the expansion actually happens, closes that gap
+              // regardless of timing.
+              // Deferred by one frame — calling this synchronously, in
+              // the same tick as st.enable()/st.refresh(), could read the
+              // DOM before the browser has actually applied the pin's
+              // new layout, computing a temporarily wrong (tiny) page
+              // height and forcibly clamping/resetting scroll position
+              // to fit it — this was the actual cause of "scrolls back
+              // to top" when entering this section. Waiting one frame
+              // lets layout settle first.
+              requestAnimationFrame(() => window.__lenis?.resize());
+              onEnabled();
+              return;
+            }
+            gateRafId = requestAnimationFrame(check);
+          };
+          check();
+        };
+
         const tl = gsap.timeline({
           scrollTrigger: pin
             ? {
@@ -219,15 +300,89 @@ export function ProcessFlow({
                 pin: true,
                 anticipatePin: 1,
                 invalidateOnRefresh: true,
+                // Smooth fade rather than an instant snap into view — the
+                // initial gsap.set above (fully hidden) stays instant since
+                // it's just establishing the starting condition, but the
+                // reveal itself should feel like part of the smooth-scroll
+                // experience, not a jarring pop-in.
+                onEnter: () =>
+                  gsap.to(trigger, {
+                    autoAlpha: 1,
+                    zIndex: 20,
+                    duration: 0.35,
+                    ease: "power2.out",
+                  }),
+                onEnterBack: () =>
+                  gsap.to(trigger, {
+                    autoAlpha: 1,
+                    zIndex: 20,
+                    duration: 0.35,
+                    ease: "power2.out",
+                  }),
+                // No onLeave/onLeaveBack reset here — that was tried
+                // previously to prevent stale state bleeding into later
+                // sections, but it fires at the EXACT moment the pin's
+                // scroll range ends, which is the same moment the last
+                // stage finishes lighting up — so the fully-completed,
+                // all-lit state was visible for essentially zero time
+                // before being wiped back to blank, reading as "scroll
+                // through it and everything goes unlit at the end." The
+                // outer autoAlpha gate on `trigger` already prevents any
+                // visual bleed-through into whatever comes next; resetting
+                // these inner colors too was both unnecessary and the
+                // actual cause of this bug. A scrubbed timeline correctly
+                // re-derives its state from scroll position on its own
+                // every time the section is re-entered, forward or back,
+                // with no explicit reset required.
               }
             : {
                 trigger,
-                start: "top 85%",
-                end: "bottom 55%",
-                scrub: 0.6,
+                // Maps the scrub to the element's ACTUAL visible window on
+                // screen: 0% the instant its top edge appears at the
+                // bottom of the viewport, 100% the instant its bottom
+                // edge is about to leave at the top of the viewport.
+                // Previously used "top 90%" + a wide fixed distance,
+                // which consumed most of the scrub range before the row
+                // felt genuinely visible to the user (confirmed: ~75% of
+                // the animation had already played by the time it was
+                // clearly on screen, leaving only ~25% to watch happen).
+                // This mapping guarantees 0% always coincides with first
+                // appearing and 100% with last disappearing, regardless
+                // of viewport size or the row's own height.
+                start: "top bottom",
+                end: "bottom top",
+                // Direct 1:1 scroll mapping (no smoothing lag) — scrub:0.6
+                // was tried first and reportedly got stuck fully lit
+                // rather than tracking scroll position; removing the
+                // smoothing eliminates any window where a rebuild
+                // (ResizeObserver-triggered, and there are now several of
+                // these instances on the page independently watching for
+                // layout shifts) could interrupt it mid-transition.
+                scrub: true,
                 invalidateOnRefresh: true,
               },
         });
+
+        if (pin) {
+          const st = tl.scrollTrigger;
+          if (st && !hasEnabledGate) {
+            // Disable synchronously, before the browser has any chance to
+            // paint or scroll further — GSAP will not pin, scrub, or fire
+            // any callback on this instance while disabled, so nothing
+            // here can silently advance (or make itself visible) while
+            // the previous section is still substantially on screen.
+            st.disable();
+            pollUntilCleared(st, () => {
+              // Same class of fix applied to ClarityRevealSection and
+              // WhyMtSmartSection: neither enable() nor refresh() is
+              // guaranteed to retroactively fire this timeline's tweens
+              // for the "jump" to current scroll-derived progress.
+              // Re-assigning progress to itself forces GSAP to treat it
+              // as a genuine change and actually render it.
+              tl.progress(tl.progress());
+            });
+          }
+        }
 
         tl.to([path, glowPath], { strokeDashoffset: 0, ease: "none", duration: 1 }, 0);
 
@@ -247,7 +402,7 @@ export function ProcessFlow({
             t
           ).to(
             el,
-            { scale: 1, textShadow: restingTextShadow, duration: 0.06, ease: "power2.in" },
+            { color: lime, scale: 1, textShadow: restingTextShadow, duration: 0.06, ease: "power2.in" },
             t + 0.05
           );
 
@@ -309,11 +464,21 @@ export function ProcessFlow({
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(gateRafId);
       window.removeEventListener("resize", onResize);
       resizeObserver.disconnect();
       ctx?.revert();
     };
-  }, [stages, isMilestone, size, pin, pinTargetRef, cfg.lineOffsetBelow, cfg.lineOffsetSide]);
+  }, [
+    stages,
+    isMilestone,
+    size,
+    pin,
+    pinTargetRef,
+    gateAgainstSectionId,
+    cfg.lineOffsetBelow,
+    cfg.lineOffsetSide,
+  ]);
 
   return (
     <div
@@ -406,13 +571,13 @@ export function ProcessFlow({
             </p>
           )}
 
-          {isMilestone && renderExtra && (
+          {isMilestone && renderExtraAction && (
             <div
               ref={(el) => {
                 extraRefs.current[i] = el;
               }}
             >
-              {renderExtra(i)}
+              {renderExtraAction(i)}
             </div>
           )}
         </div>

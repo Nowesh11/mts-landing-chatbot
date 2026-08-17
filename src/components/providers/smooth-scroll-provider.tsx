@@ -12,22 +12,17 @@ export function SmoothScrollProvider({
 }: {
   children: React.ReactNode;
 }) {
-  // Every pinned ScrollTrigger section measures the DOM at the moment it
-  // initializes. If web fonts or images are still settling — which happens
-  // far more often in production than in a warm local dev cache — those
-  // measurements are wrong and pin-spacers end up too short, causing later
-  // sections to scroll into view before the current pinned section has
-  // finished (visible as sections overlapping). Re-measuring after fonts,
-  // the full page load, and a short trailing delay corrects this
-  // regardless of which section's images/fonts were the actual culprit.
+ 
   useEffect(() => {
     const refresh = () => ScrollTrigger.refresh();
 
+    const raf = requestAnimationFrame(refresh);
     document.fonts.ready.then(refresh);
     window.addEventListener("load", refresh);
-    const timeout = setTimeout(refresh, 500);
+    const timeout = setTimeout(refresh, 1000);
 
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("load", refresh);
       clearTimeout(timeout);
     };
@@ -56,7 +51,26 @@ export function SmoothScrollProvider({
     // dependency on GSAP's internal ticker state.
     let rafId = 0;
     const raf = (time: number) => {
-      lenis.raf(time);
+      // If ANYTHING throws inside lenis.raf() — including indirectly, via
+      // the ScrollTrigger.update listener registered above, which in turn
+      // touches every ScrollTrigger instance on the page (and this page
+      // has several: Clarity Reveal, Why MT Smart, Journey, Big Statement,
+      // both Resource Panels rows) — an uncaught exception here would
+      // stop execution before reaching requestAnimationFrame(raf) below,
+      // permanently halting this loop. That would explain wheel-scroll
+      // going dead further down the page (Lenis no longer processing any
+      // input) while native scrollbar-drag keeps working (it bypasses
+      // Lenis's JS loop entirely). Wrapping in try/catch makes this loop
+      // self-healing: one bad frame gets logged and skipped rather than
+      // permanently killing scroll for the rest of the session.
+      try {
+        lenis.raf(time);
+      } catch (err) {
+        console.error(
+          "[SmoothScrollProvider] lenis.raf() threw — recovering, scroll should keep working:",
+          err
+        );
+      }
       rafId = requestAnimationFrame(raf);
     };
     rafId = requestAnimationFrame(raf);

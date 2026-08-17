@@ -137,23 +137,55 @@ export function WhyMtSmartSection() {
 
           const scale = 0.85 + 0.15 * progress;
           const opacity = 0.5 + 0.5 * progress;
-          card.style.transform = `scale(${scale})`;
-          card.style.opacity = `${opacity}`;
-          card.style.borderColor = `rgba(198, 217, 46, ${0.1 + 0.3 * progress})`;
-          card.style.boxShadow = `0 0 ${28 * progress}px rgba(198, 217, 46, ${
-            0.3 * progress
-          }), 0 0 ${8 * progress}px rgba(198, 217, 46, ${0.4 * progress})`;
+          gsap.set(card, {
+            scale,
+            opacity,
+            borderColor: `rgba(198, 217, 46, ${0.1 + 0.3 * progress})`,
+            boxShadow: `0 0 ${28 * progress}px rgba(198, 217, 46, ${
+              0.3 * progress
+            }), 0 0 ${8 * progress}px rgba(198, 217, 46, ${0.4 * progress})`,
+          });
 
           if (CREDENTIALS[i]?.isYears && yearsNumberRef.current) {
-            // Snap to the full value once the card is reasonably focused,
-            // rather than tracking raw distance forever — the card never
-            // sits at a mathematically perfect progress of 1, so without
-            // this the count could stall short of (or briefly dip below)
-            // its target depending on exact scroll position.
             const displayProgress = progress > 0.85 ? 1 : progress;
             yearsNumberRef.current.textContent = `${Math.round(displayProgress * 20)}`;
           }
         });
+      };
+
+      const resetCardsToRest = () => {
+        cards.forEach((card) => {
+          gsap.set(card, {
+            scale: 0.85,
+            opacity: 0.5,
+            borderColor: "rgba(198, 217, 46, 0.1)",
+            boxShadow: "0 0 0 rgba(198, 217, 46, 0)",
+          });
+        });
+      };
+
+      gsap.set(pin, { autoAlpha: 0, zIndex: 0 });
+
+      const previousSection = document.getElementById("sector-solutions");
+      const isPreviousSectionCleared = () => {
+        if (!previousSection) return true;
+        return previousSection.getBoundingClientRect().bottom <= 40;
+      };
+
+      let hasEnabled = !previousSection;
+      let rafId = 0;
+      const pollUntilCleared = (st: ScrollTrigger, onEnabled: () => void) => {
+        const check = () => {
+          if (hasEnabled) return;
+          if (isPreviousSectionCleared()) {
+            hasEnabled = true;
+            st.enable();
+            onEnabled();
+            return;
+          }
+          rafId = requestAnimationFrame(check);
+        };
+        check();
       };
 
       const tween = gsap.to(track, {
@@ -169,12 +201,61 @@ export function WhyMtSmartSection() {
           invalidateOnRefresh: true,
           onUpdate: updateCards,
           onRefresh: updateCards,
+          onEnter: () =>
+            gsap.to(pin, {
+              autoAlpha: 1,
+              zIndex: 20,
+              duration: 0.35,
+              ease: "power2.out",
+            }),
+          onEnterBack: () =>
+            gsap.to(pin, {
+              autoAlpha: 1,
+              zIndex: 20,
+              duration: 0.35,
+              ease: "power2.out",
+            }),
+          onLeave: resetCardsToRest,
+          onLeaveBack: resetCardsToRest,
         },
       });
+
+      const st = tween.scrollTrigger!;
+      if (!hasEnabled) {
+        st.disable();
+        pollUntilCleared(st, () => {
+          // st.enable() resumes using start/end calculated at creation
+          // time (while still effectively disabled) — refresh re-measures
+          // against current layout (this trigger's `end` depends on
+          // track.scrollWidth, a horizontal distance that's easy to
+          // measure stale). This only runs inside the desktop-only
+          // matchMedia branch, matching "broken on desktop, fine on
+          // mobile" exactly.
+          st.refresh();
+          // Same fix applied to ProcessFlow/Journey: resize Lenis right
+          // when this pin's true final height becomes known, since
+          // SmoothScrollProvider's time-based refreshes may fire before
+          // this gate ever opens.
+          // Deferred by one frame — calling synchronously could read the
+          // DOM before the browser applies the pin's new layout,
+          // computing a temporarily wrong page height and forcibly
+          // resetting scroll to top (the actual cause of that regression).
+          requestAnimationFrame(() => window.__lenis?.resize());
+          // Neither enable() nor refresh() is guaranteed to retroactively
+          // fire onUpdate for the "jump" to current scroll-derived
+          // progress — the same class of bug confirmed on Clarity Reveal
+          // (GSAP's internal progress was correct, but the DOM never got
+          // told to update to match it). Force both the track's tween AND
+          // updateCards() to sync explicitly.
+          tween.progress(tween.progress());
+          updateCards();
+        });
+      }
 
       updateCards();
 
       return () => {
+        cancelAnimationFrame(rafId);
         tween.scrollTrigger?.kill();
         tween.kill();
       };
@@ -202,7 +283,6 @@ export function WhyMtSmartSection() {
       id="why-us"
       className="relative overflow-hidden bg-navy"
     >
-      {/* Ambient background depth, consistent with ESG / Big Statement */}
       <div
         aria-hidden
         className="pointer-events-none absolute -left-40 top-0 h-[540px] w-[540px] rounded-full opacity-10"
@@ -222,7 +302,6 @@ export function WhyMtSmartSection() {
         }}
       />
 
-      {/* Faint blueprint grid texture, matching ESG / Big Statement */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
@@ -233,8 +312,7 @@ export function WhyMtSmartSection() {
         }}
       />
 
-      {/* Desktop: pinned horizontal scroll-through */}
-      <div ref={pinRef} className="relative hidden lg:block">
+      <div ref={pinRef} className="relative hidden bg-navy lg:block">
         <div className="relative z-10 flex h-screen flex-col justify-center gap-14 overflow-hidden px-6 py-16 lg:px-10">
           <div className="mx-auto w-full max-w-7xl">
             <motion.h2
@@ -291,7 +369,6 @@ export function WhyMtSmartSection() {
         </div>
       </div>
 
-      {/* Mobile / tablet: simple vertical stack */}
       <div className="relative z-10 mx-auto w-full max-w-2xl px-6 py-24 lg:hidden">
         <motion.h2
           initial={{ opacity: 0, y: 16 }}

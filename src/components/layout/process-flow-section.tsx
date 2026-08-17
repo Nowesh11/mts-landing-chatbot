@@ -152,7 +152,7 @@ export function ProcessFlowSection() {
 
       <div
         ref={pinRef}
-        className="relative flex min-h-screen flex-col justify-center gap-14 px-6 py-16 lg:gap-16 lg:px-10"
+        className="relative flex min-h-screen flex-col justify-center gap-14 bg-navy px-6 py-16 lg:gap-16 lg:px-10"
       >
         <div className="relative z-10 mx-auto w-full max-w-7xl">
           <motion.p
