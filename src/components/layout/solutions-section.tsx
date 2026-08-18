@@ -18,7 +18,7 @@ const SERVICES: Service[] = [
     title: "Industrial Waste Management",
     description:
       "Structured management of industrial waste streams, including segregation, handling, recovery and ESG-related documentation.",
-    image: "/images/service-industrial-waste.jpeg",
+    image: "/images/waste.jpeg",
     featured: true,
     spanClass: "lg:col-span-2 lg:row-span-2",
     titleClass: "text-2xl lg:text-3xl",
@@ -27,7 +27,7 @@ const SERVICES: Service[] = [
     title: "Controlled Dismantling & Demolition",
     description:
       "Safe dismantling of industrial machinery, structures and end-of-life assets with consideration for site safety, operational continuity and material recovery.",
-    image: "/images/service-dismantling.png",
+    image: "/images/service-industrial-waste.jpeg",
     spanClass: "lg:row-span-2",
     titleClass: "text-xl",
   },
