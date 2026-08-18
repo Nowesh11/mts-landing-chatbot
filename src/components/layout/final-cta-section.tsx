@@ -16,9 +16,9 @@ const HEADLINE =
 // 016-5417743 → drop the leading trunk 0, prepend the Malaysia country code 60.
 const WHATSAPP_URL = "https://wa.me/60165417743";
 
-// Consultation-specific WhatsApp number: +60 12-568 4703 → wa.me needs
-// digits only, no +, spaces, or dashes.
-const CONSULTATION_WHATSAPP_URL = "https://wa.me/60125684703";
+// Consultation now calls directly: +60 12-568 4703 → tel: needs a leading
+// + and digits only, no spaces or dashes.
+const CONSULTATION_TEL = "tel:+60125684703";
 
 const QUOTATION_EMAIL_MAILTO =
   "mailto:naveshsaravanan@mtsmart-industries.com?subject=Request%20a%20Quotation";
@@ -164,9 +164,7 @@ export function FinalCtaSection() {
           className="mt-10 flex flex-wrap items-center justify-center gap-4"
         >
           <MagneticButton
-            href={CONSULTATION_WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={CONSULTATION_TEL}
             className="inline-flex items-center justify-center rounded-full bg-lime px-7 py-3.5 text-sm font-medium text-navy transition-transform"
           >
             Request a Consultation
