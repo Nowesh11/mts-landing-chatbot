@@ -7,6 +7,7 @@ import gsap from "gsap";
 import { SplitText } from "gsap/SplitText";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { MagneticButton } from "@/components/ui/magnetic-button";
+import { Mail, Phone } from "lucide-react";
 
 gsap.registerPlugin(SplitText, ScrollTrigger);
 
@@ -165,15 +166,17 @@ export function FinalCtaSection() {
         >
           <MagneticButton
             href={CONSULTATION_TEL}
-            className="inline-flex items-center justify-center rounded-full bg-lime px-7 py-3.5 text-sm font-medium text-navy transition-transform"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-lime px-7 py-3.5 text-sm font-medium text-navy transition-transform"
           >
-            Request a Consultation
+            <Phone size={14} strokeWidth={1.75} className="text-navy" />
+            Contact Us
           </MagneticButton>
 
           <MagneticButton
             href={QUOTATION_EMAIL_MAILTO}
-            className="inline-flex items-center justify-center rounded-full border border-slate/50 px-7 py-3.5 text-sm font-medium text-offwhite transition-colors hover:border-offwhite"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-slate/50 px-7 py-3.5 text-sm font-medium text-offwhite transition-colors hover:border-offwhite"
           >
+            <Mail size={14} strokeWidth={1.75} className="text-offwhite" />
             Request a Quotation
           </MagneticButton>
 
