@@ -16,9 +16,9 @@ const CATEGORIES: Category[] = [
     description:
       "Safe, structured dismantling of heavy machinery and industrial assets.",
     images: [
-      "/images/experience-dismantling-1.png",
-      "/images/experience-dismantling-2.png",
-      "/images/experience-dismantling-3.png",
+      "/images/machine1.jpeg",
+      "/images/machine2.jpeg",
+      "/images/machine3.jpeg",
     ],
   },
   {
@@ -26,9 +26,9 @@ const CATEGORIES: Category[] = [
     description:
       "Site waste collection, segregation and recovery from start to finish.",
     images: [
-      "/images/experience-construction-1.png",
-      "/images/experience-construction-2.png",
-      "/images/experience-construction-3.png",
+      "/images/roro1.jpeg",
+      "/images/roro2.jpeg",
+      "/images/roro3.jpeg",
     ],
   },
   {
@@ -36,9 +36,9 @@ const CATEGORIES: Category[] = [
     description:
       "Full-scale facility dismantling and site clearance, done responsibly.",
     images: [
-      "/images/experience-factory-1.png",
-      "/images/experience-factory-2.png",
-      "/images/experience-factory-3.png",
+      "/images/factory1.jpeg",
+      "/images/factory2.jpeg",
+      "/images/factory3.jpeg",
     ],
   },
 ];

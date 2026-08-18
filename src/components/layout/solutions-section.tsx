@@ -18,7 +18,7 @@ const SERVICES: Service[] = [
     title: "Industrial Waste Management",
     description:
       "Structured management of industrial waste streams, including segregation, handling, recovery and ESG-related documentation.",
-    image: "/images/service-industrial-waste.png",
+    image: "/images/service-industrial-waste.jpeg",
     featured: true,
     spanClass: "lg:col-span-2 lg:row-span-2",
     titleClass: "text-2xl lg:text-3xl",

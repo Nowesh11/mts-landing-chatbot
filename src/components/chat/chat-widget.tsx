@@ -19,13 +19,22 @@ type ChatMessage = {
 };
 
 const WELCOME_MESSAGE =
-  "Hi, I'm Atlas — MT Smart Industries' assistant. I can help answer questions about our waste and resource management services, sustainability approach, certifications, and how to get in touch. What would you like to know?";
+  "Hi, I'm Harry — MT Smart Industries' assistant. I can help answer questions about our waste and resource management services, sustainability approach, certifications, and how to get in touch. What would you like to know?";
 
 const SUGGESTED_QUESTIONS = [
   "What services do you offer?",
   "Do you handle food waste?",
   "How do I request a quote?",
 ];
+
+// Shown as an auto-appearing bubble near the launcher a few seconds after
+// page load, before the user has ever opened the chat — solves the
+// discoverability problem (previously the only affordance was a subtle
+// pulse ring around the button, easy for a first-time visitor to miss
+// entirely).
+const ATTENTION_BUBBLE_TEXT = "👋 Hi! Need help? Chat with Harry";
+const ATTENTION_BUBBLE_DELAY_MS = 4000;
+const ATTENTION_BUBBLE_AUTO_HIDE_MS = 9000;
 
 function uid() {
   return Math.random().toString(36).slice(2);
@@ -36,7 +45,7 @@ function uid() {
 // a small pulsing "online" badge on the bottom-right edge, matching a
 // standard profile-picture presence indicator. `glow` adds the site's
 // drop-shadow-not-flat depth treatment for the larger header placement.
-function AtlasAvatar({
+function HarryAvatar({
   size = 32,
   statusDot = false,
   glow = false,
@@ -65,16 +74,9 @@ function AtlasAvatar({
           ring ? "border border-lime/60" : ""
         }`}
       >
-        {/* The source image's circular crop sits exactly at the frame edge
-            (touches at 0/1024px), so downscaling to avatar size bilinearly
-            blends in a hint of the white canvas right at that boundary —
-            visible as a faint white ring at our own clip edge. Scaling the
-            image up moves the circle's true edge outside the visible
-            frame, so overflow-hidden clips away the blended boundary
-            entirely instead of just the intended margin. */}
         <Image
-          src="/images/atlas-avatar.png"
-          alt="Atlas"
+          src="/images/harry-avatar.png"
+          alt="Harry"
           fill
           sizes={`${size}px`}
           className="scale-[1.14] object-cover"
@@ -97,7 +99,7 @@ function AtlasAvatar({
 function TypingIndicator() {
   return (
     <div className="flex items-end gap-2">
-      <AtlasAvatar size={28} />
+      <HarryAvatar size={28} />
       <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm border border-lime/10 bg-surface px-4 py-3">
         {[0, 1, 2].map((i) => (
           <motion.span
@@ -138,7 +140,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       className="flex max-w-[85%] items-end gap-2"
     >
-      <AtlasAvatar size={28} />
+      <HarryAvatar size={28} />
       <div
         className={`rounded-2xl rounded-bl-sm border px-4 py-2.5 text-sm leading-relaxed ${
           message.isError
@@ -159,13 +161,37 @@ export function ChatWidget() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showAttentionBubble, setShowAttentionBubble] = useState(false);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const welcomeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Discoverability: auto-show a small "Hi! Need help?" bubble near the
+  // launcher a few seconds after page load, before the visitor has ever
+  // interacted with it — the pulse ring alone was easy to miss entirely.
+  // Auto-hides itself after a while so it doesn't linger forever if
+  // ignored, and is dismissed immediately (and never shown again this
+  // session) the moment the user actually opens the chat.
+  useEffect(() => {
+    const showTimer = setTimeout(() => {
+      setShowAttentionBubble(true);
+    }, ATTENTION_BUBBLE_DELAY_MS);
+
+    return () => clearTimeout(showTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!showAttentionBubble) return;
+    const hideTimer = setTimeout(() => {
+      setShowAttentionBubble(false);
+    }, ATTENTION_BUBBLE_AUTO_HIDE_MS);
+    return () => clearTimeout(hideTimer);
+  }, [showAttentionBubble]);
+
   const handleOpen = () => {
     setIsOpen(true);
+    setShowAttentionBubble(false);
     if (!hasOpenedOnce) {
       setHasOpenedOnce(true);
       welcomeTimeoutRef.current = setTimeout(() => {
@@ -263,6 +289,31 @@ export function ChatWidget() {
   return (
     <>
       <div className="fixed bottom-6 right-6 z-50">
+        {/* Auto-appearing attention bubble — only ever shown before the
+            chat has been opened for the first time. */}
+        <AnimatePresence>
+          {showAttentionBubble && !isOpen && !hasOpenedOnce && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              style={{ transformOrigin: "bottom right" }}
+              className="absolute bottom-[calc(100%+12px)] right-0 w-max max-w-[220px] rounded-2xl rounded-br-sm border border-lime/20 bg-surface px-4 py-3 text-sm text-offwhite shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+            >
+              <button
+                type="button"
+                onClick={() => setShowAttentionBubble(false)}
+                aria-label="Dismiss"
+                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-lime/20 bg-navy text-slate transition-colors hover:text-offwhite"
+              >
+                <X size={11} strokeWidth={2.5} />
+              </button>
+              {ATTENTION_BUBBLE_TEXT}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {!hasOpenedOnce && (
           <motion.span
             aria-hidden
@@ -276,7 +327,7 @@ export function ChatWidget() {
           onClick={handleToggle}
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.92 }}
-          aria-label={isOpen ? "Close chat with Atlas" : "Chat with Atlas"}
+          aria-label={isOpen ? "Close chat with Harry" : "Chat with Harry"}
           className="relative flex h-14 w-14 items-center justify-center rounded-full bg-surface text-lime shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-colors hover:bg-surface/80"
         >
           <AnimatePresence mode="wait" initial={false}>
@@ -301,7 +352,7 @@ export function ChatWidget() {
               >
                 <div className="relative h-full w-full overflow-hidden rounded-full bg-navy">
                   <Image
-                    src="/images/atlas-avatar.png"
+                    src="/images/harry-avatar.png"
                     alt=""
                     fill
                     sizes="44px"
@@ -332,10 +383,10 @@ export function ChatWidget() {
           >
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-lime/10 bg-surface/40 px-4 py-4">
-              <AtlasAvatar size={40} statusDot glow ring />
+              <HarryAvatar size={40} statusDot glow ring />
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-sm font-semibold text-offwhite">
-                  Atlas
+                  Harry
                 </h2>
                 <p className="truncate text-xs text-slate">
                   MT Smart Industries Assistant
@@ -394,7 +445,7 @@ export function ChatWidget() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isTyping}
-                placeholder="Ask Atlas anything..."
+                placeholder="Ask Harry anything..."
                 rows={1}
                 className="max-h-24 flex-1 resize-none rounded-2xl border border-lime/10 bg-navy/60 px-4 py-2.5 text-sm text-offwhite placeholder-slate outline-none transition-colors focus:border-lime/40 disabled:opacity-50"
               />

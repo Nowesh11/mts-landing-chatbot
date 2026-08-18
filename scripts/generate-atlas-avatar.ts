@@ -1,8 +1,9 @@
-// scripts/generate-atlas-avatar.ts
-// Run with: npx tsx scripts/generate-atlas-avatar.ts
+// scripts/generate-harry-avatar.ts
+// Run with: npx tsx scripts/generate-harry-avatar.ts
 //
-// Generates the Atlas chatbot avatar directly on brand navy (#0B1F3A) —
-// no transparency needed, drops straight into a circular UI element.
+// Generates Harry's avatar — a stylized African Congo Grey Parrot —
+// directly on brand navy (#0B1F3A) so it drops straight into a circular
+// UI element with no transparency handling needed.
 
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import dotenv from "dotenv"
@@ -24,7 +25,21 @@ const outputDir = path.join(process.cwd(), "public", "images")
 fs.mkdirSync(outputDir, { recursive: true })
 
 const prompt =
-  "A premium stylized digital sculpture of Atlas, the Greek Titan, rendered as a powerful bust and shoulders carved from dark navy stone or brushed dark metal, with glowing lime-green (#C6D92E) cracks and energy lines running through the material like veins of light, holding or bearing a luminous glowing lime-green sphere (representing the Earth/globe) above one shoulder, dramatic rim lighting emphasizing the figure's strength and form, mythological and iconic, circular centered composition, solid deep navy background color exactly #0B1F3A filling the entire square canvas edge to edge, premium sculptural digital art style similar to a high-end game or film title card, NOT a photorealistic human face, artistic and abstract rather than literal, no text"
+  "A premium stylized digital portrait of Harry, an African Congo Grey " +
+  "Parrot mascot character — accurate species coloring: soft pale grey " +
+  "feathers covering the body and head, a distinctive vivid scarlet red " +
+  "tail, pale grey-white facial mask around the eyes, dark charcoal " +
+  "curved beak, expressive intelligent amber-orange eyes looking directly " +
+  "at the viewer. Rendered as a close-up head-and-shoulders bust portrait, " +
+  "centered and facing forward, with a premium illustrated/digital-art " +
+  "style (clean linework, soft directional lighting, subtle feather " +
+  "texture detail) rather than flat cartoon or photorealistic. A subtle " +
+  "glowing lime-green (#C6D92E) rim light traces the edge of the head and " +
+  "feathers for brand-accent contrast against the dark background. Solid " +
+  "deep navy background color exactly #0B1F3A filling the entire square " +
+  "canvas edge to edge, no gradient, no scenery. Friendly, warm, " +
+  "intelligent expression suitable for a helpful chatbot mascot. No text, " +
+  "no logos, no watermarks."
 
 async function generate() {
   try {
@@ -34,8 +49,8 @@ async function generate() {
 
     if (imagePart?.inlineData?.data) {
       const buffer = Buffer.from(imagePart.inlineData.data, "base64")
-      fs.writeFileSync(path.join(outputDir, "atlas-avatar.png"), buffer)
-      console.log("✓ Saved atlas-avatar.png")
+      fs.writeFileSync(path.join(outputDir, "harry-avatar.png"), buffer)
+      console.log("✓ Saved harry-avatar.png")
     } else {
       console.warn("✗ No image returned — try adjusting the prompt and re-running.")
     }

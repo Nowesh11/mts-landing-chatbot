@@ -14,6 +14,7 @@ import { scrollToId } from "@/lib/scroll-to";
 const WHATSAPP_URL = "https://wa.me/60165417743";
 const PHONE_TEL = "tel:+60165417743";
 const EMAIL_MAILTO = "mailto:naveshsaravanan@mtsmart-industries.com";
+const LINKEDIN_URL = "https://www.linkedin.com/company/mt-smart-industries/";
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -24,6 +25,19 @@ function WhatsAppIcon({ className }: { className?: string }) {
       aria-hidden
     >
       <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39c1.45.79 3.08 1.21 4.75 1.21h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2zm5.83 14.02c-.24.68-1.4 1.31-1.93 1.39-.49.08-1.1.11-1.78-.11-.41-.13-.94-.3-1.62-.6-2.85-1.23-4.71-4.11-4.85-4.3-.14-.19-1.16-1.54-1.16-2.94 0-1.4.73-2.09.99-2.37.26-.28.57-.35.76-.35.19 0 .38 0 .55.01.18.01.41-.07.64.49.24.58.81 2 .88 2.14.07.14.12.3.02.49-.09.19-.14.3-.28.46-.14.16-.29.36-.42.48-.14.13-.28.28-.12.55.16.28.71 1.17 1.52 1.9 1.05.94 1.93 1.23 2.21 1.37.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.19-.28.37-.23.62-.14.26.09 1.63.77 1.91.91.28.14.47.21.54.33.07.12.07.68-.17 1.36z" />
+    </svg>
+  );
+}
+
+function LinkedInIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.28 2.38 4.28 5.47v6.27zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45z" />
     </svg>
   );
 }
@@ -40,19 +54,6 @@ function mixColor(t: number) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-// Driven via direct ref style mutation on mousemove, rather than a
-// MotionValue/useSpring per letter — the same imperative-style-write
-// technique WhyMtSmartSection uses for its per-frame card updates, chosen
-// here so it stays smooth via a plain CSS transition without depending on
-// a JS animation loop for 19 simultaneously-tracked letters.
-//
-// Layout: fluid clamp()-sized single line, `whitespace-nowrap` + `break-keep`
-// so the wordmark never wraps at all in normal use and, in the extreme case
-// it ever must, can only break between full words — never mid-word. A small
-// colophon mark sits beside it (hidden below `sm`, where every px of width
-// is needed to keep the string on one line) rather than as a background
-// watermark, and a single left-to-right gradient spans the whole string as
-// one continuous run so there is no per-line color mismatch to begin with.
 function KineticWordmark() {
   const text = "MT SMART INDUSTRIES";
   const letterRefs = useRef<Array<HTMLSpanElement | null>>([]);
@@ -242,7 +243,6 @@ export function Footer() {
 
   return (
     <footer className="relative overflow-hidden border-t border-lime/10 bg-navy">
-      {/* Ambient background depth, consistent with ESG / Sector Solutions */}
       <div
         aria-hidden
         className="pointer-events-none absolute -left-32 -top-20 h-[480px] w-[480px] rounded-full opacity-[0.08]"
@@ -295,6 +295,17 @@ export function Footer() {
                 >
                   <WhatsAppIcon className="h-4 w-4 text-lime" />
                   WhatsApp
+                </a>
+              </li>
+              <li>
+                <a
+                  href={LINKEDIN_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-offwhite/80 transition-colors hover:text-lime"
+                >
+                  <LinkedInIcon className="h-4 w-4 text-lime" />
+                  LinkedIn
                 </a>
               </li>
               <li>

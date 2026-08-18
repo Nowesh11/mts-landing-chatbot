@@ -7,7 +7,6 @@ import gsap from "gsap";
 import { SplitText } from "gsap/SplitText";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { MagneticButton } from "@/components/ui/magnetic-button";
-import { scrollToId } from "@/lib/scroll-to";
 
 gsap.registerPlugin(SplitText, ScrollTrigger);
 
@@ -16,6 +15,13 @@ const HEADLINE =
 
 // 016-5417743 → drop the leading trunk 0, prepend the Malaysia country code 60.
 const WHATSAPP_URL = "https://wa.me/60165417743";
+
+// Consultation-specific WhatsApp number: +60 12-568 4703 → wa.me needs
+// digits only, no +, spaces, or dashes.
+const CONSULTATION_WHATSAPP_URL = "https://wa.me/60125684703";
+
+const QUOTATION_EMAIL_MAILTO =
+  "mailto:naveshsaravanan@mtsmart-industries.com?subject=Request%20a%20Quotation";
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -78,11 +84,6 @@ export function FinalCtaSection() {
     if (!rect) return;
     mx.set(e.clientX - rect.left);
     my.set(e.clientY - rect.top);
-  };
-
-  const handleConsultationClick = (e: ReactMouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    scrollToId("#contact");
   };
 
   return (
@@ -163,16 +164,16 @@ export function FinalCtaSection() {
           className="mt-10 flex flex-wrap items-center justify-center gap-4"
         >
           <MagneticButton
-            href="#contact"
-            onClick={handleConsultationClick}
+            href={CONSULTATION_WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-full bg-lime px-7 py-3.5 text-sm font-medium text-navy transition-transform"
           >
             Request a Consultation
           </MagneticButton>
 
           <MagneticButton
-            href="#contact"
-            onClick={handleConsultationClick}
+            href={QUOTATION_EMAIL_MAILTO}
             className="inline-flex items-center justify-center rounded-full border border-slate/50 px-7 py-3.5 text-sm font-medium text-offwhite transition-colors hover:border-offwhite"
           >
             Request a Quotation

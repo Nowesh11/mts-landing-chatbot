@@ -26,20 +26,20 @@ const LOCATIONS: Location[] = [
     addressShort: "Bukit Mertajam, Pulau Pinang",
     address:
       "37, Lrg Macang Indah 3, Tmn P'trian Macang Indah, 14000 Bukit Mertajam, Pulau Pinang",
-    image: "/images/location-hq.png",
+    image: "/images/location-hq-candidate3.png",
   },
   {
     label: "Segregation & Processing Facility",
     addressShort: "Bukit Mertajam, Pulau Pinang",
     address:
       "H.S(M)663, PT Lot 1540, Mukim 16, 14000 Bukit Mertajam, Pulau Pinang",
-    image: "/images/location-processing-facility.png",
+    image: "/images/location-processing-facility-candidate3.png",
   },
   {
     label: "Material Purchasing Yard",
     addressShort: "Kulim, Kedah",
     address: "Lot 71, P.T, No 1718, Mukim, Taman Kemuning, 09000 Kulim, Kedah",
-    image: "/images/location-purchasing-yard.png",
+    image: "/images/location-purchasing-yard-candidate3.png",
   },
 ];
 
@@ -89,7 +89,7 @@ type Contact = {
 const CONTACTS: Contact[] = [
   { icon: Phone, label: "Phone", value: "016-5417743" },
   { icon: Mail, label: "Email", value: "naveshsaravanan@mtsmart-industries.com" },
-  { icon: Globe, label: "Website", value: "www.mtsmart-industries.com" },
+  { icon: Globe, label: "Website", value: "https://mt-smart.com" },
 ];
 
 function GalleryTile({

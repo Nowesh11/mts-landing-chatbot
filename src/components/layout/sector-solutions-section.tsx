@@ -13,16 +13,15 @@ import {
   ChevronDown,
   Factory,
   HardHat,
-  ArrowRight,
   UtensilsCrossed,
   type LucideIcon,
 } from "lucide-react";
-import { scrollToId } from "@/lib/scroll-to";
 
 type Sector = {
   name: string;
   image: string;
   icon: LucideIcon;
+  description: string;
   tags: string[];
 };
 
@@ -31,24 +30,32 @@ const SECTORS: Sector[] = [
     name: "Industrial & Manufacturing",
     image: "/images/service-dismantling.png",
     icon: Factory,
+    description:
+      "Structured waste management, dismantling and resource recovery for industrial and manufacturing operations.",
     tags: ["Industrial waste", "EOL machinery", "Dismantling", "Resource recovery"],
   },
   {
     name: "Construction",
     image: "/images/service-construction.png",
     icon: HardHat,
+    description:
+      "End-to-end site waste management, from setup to final clearance, tailored to your project.",
     tags: ["Site waste", "RORO bins", "Segregation", "Recovery"],
   },
   {
     name: "Food & Hospitality",
     image: "/images/resource-food-waste.png",
     icon: UtensilsCrossed,
+    description:
+      "Structured food waste collection and recovery programmes that reduce landfill impact.",
     tags: ["Food waste", "Organic waste management", "Resource recovery"],
   },
   {
     name: "Commercial & Facilities",
     image: "/images/service-roro.png",
     icon: Building2,
+    description:
+      "Flexible waste segregation and RORO solutions built for commercial and facility environments.",
     tags: ["General waste", "Waste segregation", "RORO solutions", "Sustainability support"],
   },
 ];
@@ -169,7 +176,7 @@ function DesktopPanel({
           )}
         </AnimatePresence>
 
-        {/* Expanded: horizontal name, tags, explore link */}
+        {/* Expanded (hover): name, short description, tags — no button */}
         <AnimatePresence>
           {isActive && (
             <motion.div
@@ -183,6 +190,10 @@ function DesktopPanel({
               <h3 className="font-display text-2xl font-semibold text-offwhite lg:text-3xl">
                 {sector.name}
               </h3>
+
+              <p className="mt-3 max-w-sm text-sm leading-relaxed text-offwhite/80">
+                {sector.description}
+              </p>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {sector.tags.map((tag, i) => (
@@ -198,21 +209,6 @@ function DesktopPanel({
                   </motion.span>
                 ))}
               </div>
-
-              <motion.button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  scrollToId("#project-experience");
-                }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.35 }}
-                className="relative z-20 mt-6 inline-flex items-center gap-2 text-sm font-medium text-lime transition-colors hover:text-offwhite"
-              >
-                Explore
-                <ArrowRight size={16} strokeWidth={2} />
-              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -282,6 +278,9 @@ function MobileAccordionItem({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-navy/10 to-transparent" />
             </div>
+            <p className="px-5 pb-4 text-sm leading-relaxed text-offwhite/80">
+              {sector.description}
+            </p>
             <div className="flex flex-wrap gap-2 px-5 pb-5">
               {sector.tags.map((tag) => (
                 <span
