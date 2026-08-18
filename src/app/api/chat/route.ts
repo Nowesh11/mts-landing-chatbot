@@ -20,6 +20,10 @@ const geminiApiKey = process.env.GEMINI_IMAGE_API_KEY;
 const pinecone = pineconeApiKey ? new Pinecone({ apiKey: pineconeApiKey }) : null;
 const genAI = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
 
+const WHATSAPP_URL = "https://wa.me/60165417743";
+const PHONE = "016-5417743";
+const EMAIL = "naveshsaravanan@mtsmart-industries.com";
+
 // Very small in-memory rate limiter, per server instance.
 const rateLimitHits = new Map<string, number[]>();
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -35,13 +39,30 @@ function isRateLimited(key: string): boolean {
   return hits.length > RATE_LIMIT_MAX_REQUESTS;
 }
 
-const SYSTEM_PROMPT = `You are Atlas, the AI assistant for MT Smart Industries Sdn Bhd, an integrated waste and resource management company in Malaysia.
+// Rewritten to explicitly enforce SHORT, friendly, chat-style replies.
+// The knowledge base itself was rebuilt into ~110 short Q&A-style records
+// (see scripts/ingest-knowledge.ts) so retrieval now returns short source
+// material — but that alone doesn't control reply LENGTH. This prompt is
+// what actually keeps Gemini's generated response short; without explicit
+// length/format instructions here, it tends to elaborate well past
+// whatever length the retrieved context happened to be.
+const SYSTEM_PROMPT = `You are Atlas, the friendly AI assistant for MT Smart Industries Sdn Bhd, an integrated waste and resource management company in Malaysia.
 
-Answer ONLY using the retrieved context provided below. Speak knowledgeably and warmly about MT Smart Industries' services, as a genuine representative of the company. Never invent details, services, certifications, or facts that are not present in the retrieved context.
+REPLY STYLE — follow these rules on every response, no exceptions:
+- Keep replies SHORT: 1–3 sentences for most questions. Never write long paragraphs.
+- Sound like a friendly, helpful chat message — not a brochure or formal report.
+- If listing multiple services or points, use a short comma-separated list or a few short lines, not detailed multi-sentence descriptions of each one. Offer to go deeper only if asked ("Want details on any of these?").
+- Do not repeat the question back before answering. Just answer.
+- Answer ONLY using the retrieved context provided below. Never invent details, services, certifications, or facts that are not present in the retrieved context.
+- If the retrieved context doesn't address the question, say so briefly and point them to WhatsApp/contact — don't guess.
 
-If the retrieved context does not actually address the user's question, say so clearly and suggest they contact the MT Smart Industries team directly using the phone/email from the context (if available), rather than guessing or making something up.
+CONTACT — always available regardless of retrieved context:
+- WhatsApp: ${WHATSAPP_URL}
+- Phone: ${PHONE}
+- Email: ${EMAIL}
+Whenever the user asks how to contact the company, get a quote, get in touch, or anything similar, ALWAYS include the WhatsApp link (${WHATSAPP_URL}) in your reply — this is true even if it doesn't appear verbatim in the retrieved context below, since it's the company's primary contact channel.
 
-Tone: helpful, professional, warm, and concise.`;
+Tone: warm, professional, concise — like a real, knowledgeable team member replying quickly in chat.`;
 
 export async function POST(request: Request) {
   if (!pinecone || !pineconeIndexName) {
@@ -96,7 +117,12 @@ export async function POST(request: Request) {
     const namespace = pinecone.index(pineconeIndexName).namespace("default");
     const searchResponse = await namespace.searchRecords({
       query: {
-        topK: 5,
+        // Slightly increased from 5 — the knowledge base is now ~110
+        // short Q&A records instead of 15 long chunks, so a few more
+        // short hits still stays well within a reasonable context size
+        // while giving broader coverage for multi-part questions (e.g.
+        // "what services do you offer and how do I contact you").
+        topK: 7,
         inputs: { text: query },
       },
     });
@@ -121,7 +147,7 @@ ${retrievedContext || "(No relevant context was found for this question.)"}
 ${historyText ? `Conversation history:\n${historyText}\n` : ""}
 User's latest message: ${query}
 
-Atlas's reply:`;
+Atlas's reply (remember: SHORT, 1-3 sentences, friendly):`;
 
     const result = await model.generateContent(prompt);
     const reply = result.response.text();
