@@ -141,7 +141,7 @@ export function JourneySection() {
           <ProcessFlow
             stages={MILESTONES}
             descriptions={DESCRIPTIONS}
-            renderExtraAction={(i) => (i === 3 ? <CredentialBadges labels={CERTS} /> : null)}
+            renderExtra={(i) => (i === 3 ? <CredentialBadges labels={CERTS} /> : null)}
             size="lg"
             pin
             pinTargetRef={pinRef}
