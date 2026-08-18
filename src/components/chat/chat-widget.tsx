@@ -209,6 +209,19 @@ export function ChatWidget() {
     }
   };
 
+  // Exposed globally so other components (the navbar's chat icon button,
+  // any other future "chat with us" link elsewhere on the page) can open
+  // the widget directly without needing this component's internal state
+  // lifted into a shared context/provider — same lightweight pattern
+  // already used for window.__lenis in SmoothScrollProvider.
+  useEffect(() => {
+    window.__openChat = handleOpen;
+    return () => {
+      window.__openChat = undefined;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasOpenedOnce]);
+
   useEffect(() => {
     return () => {
       if (welcomeTimeoutRef.current) clearTimeout(welcomeTimeoutRef.current);

@@ -8,7 +8,7 @@ import {
   useTransform,
   AnimatePresence,
 } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, MessageCircle, X } from "lucide-react";
 import { scrollToId } from "@/lib/scroll-to";
 
 const LINKS = [
@@ -54,6 +54,24 @@ function NavLink({
         />
       )}
     </a>
+  );
+}
+
+// Opens the chat widget directly via the global trigger it exposes —
+// see chat-widget.tsx's window.__openChat. Icon-only rather than a text
+// label so it stays compact alongside the existing nav links and
+// "Get in Touch" button rather than adding to an already-busy row.
+function ChatButton({ className }: { className?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => window.__openChat?.()}
+      aria-label="Chat with Harry"
+      title="Chat with Harry"
+      className={`flex h-10 w-10 items-center justify-center rounded-full border border-lime/30 text-lime transition-colors hover:border-lime hover:bg-lime/10 ${className ?? ""}`}
+    >
+      <MessageCircle size={17} strokeWidth={2} />
+    </button>
   );
 }
 
@@ -121,24 +139,30 @@ export function Navbar() {
             ))}
           </div>
 
-          <a
-            href="#contact"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToId("#contact");
-            }}
-            className="hidden rounded-full border border-slate/40 px-5 py-2 text-sm text-offwhite transition-colors hover:border-lime hover:text-lime lg:inline-block"
-          >
-            Get in Touch
-          </a>
+          <div className="hidden items-center gap-3 lg:flex">
+            <ChatButton />
+            <a
+              href="#contact"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToId("#contact");
+              }}
+              className="rounded-full border border-slate/40 px-5 py-2 text-sm text-offwhite transition-colors hover:border-lime hover:text-lime"
+            >
+              Get in Touch
+            </a>
+          </div>
 
-          <button
-            aria-label="Toggle menu"
-            onClick={() => setMobileOpen(true)}
-            className="text-offwhite lg:hidden"
-          >
-            <Menu size={26} />
-          </button>
+          <div className="flex items-center gap-3 lg:hidden">
+            <ChatButton />
+            <button
+              aria-label="Toggle menu"
+              onClick={() => setMobileOpen(true)}
+              className="text-offwhite"
+            >
+              <Menu size={26} />
+            </button>
+          </div>
         </nav>
       </motion.header>
 
@@ -195,6 +219,23 @@ export function Navbar() {
                   {link.label}
                 </motion.a>
               ))}
+
+              <motion.button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false);
+                  window.__openChat?.();
+                }}
+                variants={{
+                  hidden: { opacity: 0, y: 24 },
+                  visible: { opacity: 1, y: 0 },
+                }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="mt-2 inline-flex w-fit items-center gap-2 rounded-full border border-lime/30 px-5 py-2.5 text-sm font-medium text-lime transition-colors hover:border-lime hover:bg-lime/10"
+              >
+                <MessageCircle size={16} strokeWidth={2} />
+                Chat with Harry
+              </motion.button>
             </motion.div>
           </motion.div>
         )}
