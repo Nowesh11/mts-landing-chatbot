@@ -1,5 +1,5 @@
 /**
- * Atlas knowledge base ingestion — v2.
+ * Harry knowledge base ingestion — v2.
  *
  * Replaces the original 15 long paragraph-style chunks with ~120 short,
  * Q&A-style records. Each record is written as "Q: ... A: ..." so the
@@ -221,7 +221,7 @@ const RECORDS: Record[] = [
   r("general", "What can you help me with?",
     "I can answer questions about MT Smart Industries' services, company background, certifications, and how to get in touch — just ask!"),
   r("general", "Who are you?",
-    "I'm Atlas, MT Smart Industries' assistant — happy to help with questions about our waste and resource management services."),
+    "I'm Harry, MT Smart Industries' assistant — happy to help with questions about our waste and resource management services."),
   r("general", "What solutions do you offer?",
     "Four main solutions: Industrial Waste Management, Controlled Dismantling & Demolition, Material Recovery, and Construction Waste Management. Want details on any of these?"),
   r("general", "Do you offer free consultations?",

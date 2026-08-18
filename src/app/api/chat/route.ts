@@ -46,7 +46,7 @@ function isRateLimited(key: string): boolean {
 // what actually keeps Gemini's generated response short; without explicit
 // length/format instructions here, it tends to elaborate well past
 // whatever length the retrieved context happened to be.
-const SYSTEM_PROMPT = `You are Atlas, the friendly AI assistant for MT Smart Industries Sdn Bhd, an integrated waste and resource management company in Malaysia.
+const SYSTEM_PROMPT = `You are Harry, the friendly AI assistant for MT Smart Industries Sdn Bhd, an integrated waste and resource management company in Malaysia.
 
 REPLY STYLE — follow these rules on every response, no exceptions:
 - Keep replies SHORT: 1–3 sentences for most questions. Never write long paragraphs.
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 
     const historyText = history
       .slice(0, -1)
-      .map((m) => `${m.role === "user" ? "User" : "Atlas"}: ${m.content}`)
+      .map((m) => `${m.role === "user" ? "User" : "Harry"}: ${m.content}`)
       .join("\n");
 
     const prompt = `${SYSTEM_PROMPT}
@@ -147,7 +147,7 @@ ${retrievedContext || "(No relevant context was found for this question.)"}
 ${historyText ? `Conversation history:\n${historyText}\n` : ""}
 User's latest message: ${query}
 
-Atlas's reply (remember: SHORT, 1-3 sentences, friendly):`;
+Harry's reply (remember: SHORT, 1-3 sentences, friendly):`;
 
     const result = await model.generateContent(prompt);
     const reply = result.response.text();
