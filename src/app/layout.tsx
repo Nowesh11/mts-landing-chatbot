@@ -101,7 +101,7 @@ export const metadata: Metadata = {
   // paste the verification code it gives you here — proves domain
   // ownership without adding a separate HTML file.
   verification: {
-    google: "PASTE_YOUR_GOOGLE_SEARCH_CONSOLE_VERIFICATION_CODE_HERE",
+    google: "r5aQZUb15gGOo4SvYwb7ftzLtMX1Un5uui5cn7nzpyE",
   },
 };
 
